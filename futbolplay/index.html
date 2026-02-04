@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FutbolPlay - Sistema de Reservas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="usuario.css">
+</head>
+<body>
+    <div class="bg-effect"></div>
+    <div class="app-container">
+        <!-- Navbar -->
+        <nav class="navbar hidden" id="navbar">
+            <div class="logo">⚽ FUTBOLPLAY</div>
+            <div class="nav-user">
+                <div class="nav-links">
+                    <button class="nav-btn active" id="btnNuevaReserva">Nueva Reserva</button>
+                    <button class="nav-btn" id="btnMisReservas">Mis Reservas <span id="reservaCount">(0)</span></button>
+                    <button class="nav-btn" id="btnTorneo">Crear Torneo</button>
+                    <button class="nav-btn" id="btnMisTorneos">Mis Torneos <span id="torneoCount">(0)</span></button>
+                </div>
+                <div class="user-info">
+                    Usuario:<span class="user-name" id="userName"></span>
+                </div>
+                <button class="btn-logout" id="btnLogout">Cerrar Sesión</button>
+            </div>
+        </nav>
+
+        <!-- Auth Container -->
+        <div class="auth-container" id="authContainer">
+            <div class="auth-box">
+                <h1 class="auth-title" id="authTitle">Iniciar Sesión</h1>
+                <p class="auth-subtitle" id="authSubtitle">Accede a tu cuenta</p>
+                <div id="alertContainer"></div>
+
+                <!-- Login Form -->
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label class="form-label">Email *</label>
+                        <input type="email" id="loginEmail" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Contraseña *</label>
+                        <input type="password" id="loginPassword" class="form-input" required>
+                    </div>
+                    <button type="submit" class="btn-primary" id="loginBtn">Iniciar Sesión</button>
+                </form>
+
+                <!-- Register Form -->
+                <form id="registerForm" class="hidden">
+                    <div class="form-group">
+                        <label class="form-label">Nombre Completo *</label>
+                        <input type="text" id="registerNombre" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Teléfono *</label>
+                        <input type="tel" id="registerTelefono" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Cédula *</label>
+                        <input type="text" id="registerCedula" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email *</label>
+                        <input type="email" id="registerEmail" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Contraseña *</label>
+                        <input type="password" id="registerPassword" class="form-input" required>
+                    </div>
+                    <button type="submit" class="btn-primary" id="registerBtn">Registrarse</button>
+                </form>
+
+                <div class="auth-switch">
+                    <span id="authSwitchText">¿No tienes cuenta?</span>
+                    <span class="auth-switch-link" id="authSwitchLink">Regístrate aquí</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content hidden" id="mainContent">
+            <!-- Nueva Reserva View -->
+            <div id="nuevaReservaView">
+                <h1 class="page-title">Nueva Reserva</h1>
+                <p class="page-subtitle">Completa el formulario para reservar tu cancha</p>
+
+                <div class="services-info">
+                    <h3 class="services-title">📋 Tarifas por Hora</h3>
+                    <div class="services-grid">
+                        <div class="service-item">
+                            <div class="service-icon">⚽</div>
+                            <div class="service-name">Fútbol 5</div>
+                            <div class="service-price">$80.000/h</div>
+                        </div>
+                        <div class="service-item">
+                            <div class="service-icon">🥅</div>
+                            <div class="service-name">Fútbol 7</div>
+                            <div class="service-price">$120.000/h</div>
+                        </div>
+                        <div class="service-item">
+                            <div class="service-icon">🏟️</div>
+                            <div class="service-name">Fútbol 11</div>
+                            <div class="service-price">$200.000/h</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="bookingAlertContainer"></div>
+
+                <div class="booking-form-container">
+                    <form id="bookingForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Tipo de Cancha *</label>
+                                <select id="tipoCancha" class="form-select" required>
+                                    <option value="">Selecciona...</option>
+                                    <option value="futbol5">Fútbol 5 - $80.000/h</option>
+                                    <option value="futbol7">Fútbol 7 - $120.000/h</option>
+                                    <option value="futbol11">Fútbol 11 - $200.000/h</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Duración *</label>
+                                <select id="duracion" class="form-select" required>
+                                    <option value="1">1 hora</option>
+                                    <option value="2">2 horas</option>
+                                    <option value="3">3 horas</option>
+                                    <option value="4">4 horas</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Fecha *</label>
+                                <input type="date" id="fecha" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Hora de Inicio *</label>
+                                <select id="hora" class="form-select" required>
+                                    <option value="">Selecciona...</option>
+                                    <option value="06:00">06:00 AM</option>
+                                    <option value="07:00">07:00 AM</option>
+                                    <option value="08:00">08:00 AM</option>
+                                    <option value="09:00">09:00 AM</option>
+                                    <option value="10:00">10:00 AM</option>
+                                    <option value="11:00">11:00 AM</option>
+                                    <option value="12:00">12:00 PM</option>
+                                    <option value="13:00">01:00 PM</option>
+                                    <option value="14:00">02:00 PM</option>
+                                    <option value="15:00">03:00 PM</option>
+                                    <option value="16:00">04:00 PM</option>
+                                    <option value="17:00">05:00 PM</option>
+                                    <option value="18:00">06:00 PM</option>
+                                    <option value="19:00">07:00 PM</option>
+                                    <option value="20:00">08:00 PM</option>
+                                    <option value="21:00">09:00 PM</option>
+                                    <option value="22:00">10:00 PM</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Servicios Adicionales</label>
+                            <select id="serviciosExtra" class="form-select">
+                                <option value="ninguno">Ninguno</option>
+                                <option value="chalecos">Chalecos - $10.000</option>
+                                <option value="balon">Balón Profesional - $15.000</option>
+                                <option value="arbitro">Árbitro - $50.000</option>
+                                <option value="todo">Todo Incluido - $70.000</option>
+                            </select>
+                        </div>
+
+                        <div class="price-display hidden" id="priceDisplay">
+                            <div class="price-label">Total a Pagar</div>
+                            <div class="price-value" id="priceValue">$0</div>
+                        </div>
+
+                        <button type="submit" class="btn-primary" id="bookingBtn" style="margin-top: 2rem;">
+                            Confirmar Reserva
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Mis Reservas View -->
+            <div id="misReservasView" class="hidden">
+                <h1 class="page-title">Mis Reservas</h1>
+                <p class="page-subtitle" id="reservasSubtitle">Aquí verás todas tus reservas</p>
+                <div id="bookingsContainer"></div>
+            </div>
+
+            <!-- Vista Crear Torneo -->
+            <div id="torneoView" class="hidden">
+                <h1 class="page-title">Crear Torneo</h1>
+                <p class="page-subtitle">Organiza tu propio campeonato</p>
+
+                <!-- INFO DE PRECIOS -->
+                <div class="services-info" style="border-color: rgba(255, 51, 102, 0.2);">
+                    <h3 class="services-title" style="color: var(--secondary);">🏆 Tarifas por Organización</h3>
+                    <div class="services-grid">
+                        <div class="service-item">
+                            <div class="service-icon">🥉</div>
+                            <div class="service-name">8 Equipos</div>
+                            <div class="service-price" style="color: var(--secondary);">$300.000</div>
+                        </div>
+                        <div class="service-item">
+                            <div class="service-icon">🥈</div>
+                            <div class="service-name">12 Equipos</div>
+                            <div class="service-price" style="color: var(--secondary);">$450.000</div>
+                        </div>
+                        <div class="service-item">
+                            <div class="service-icon">🥇</div>
+                            <div class="service-name">16 Equipos</div>
+                            <div class="service-price" style="color: var(--secondary);">$600.000</div>
+                        </div>
+                    </div>
+                    <p style="color: var(--gray); font-size: 0.9rem; margin-top: 1rem; text-align: center;">
+                        * Incluye: Uso de canchas, balones, chalecos, árbitros y sistema de gestión
+                    </p>
+                </div>
+
+                <div id="torneoAlert"></div>
+
+                <div class="booking-form-container" style="border-color: rgba(255, 51, 102, 0.2);">
+                    <form id="torneoForm">
+                        <div class="form-group">
+                            <label class="form-label" style="color: var(--secondary);">Nombre del Torneo *</label>
+                            <input type="text" id="nombreTorneo" class="form-input" required>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" style="color: var(--secondary);">Tipo de Cancha *</label>
+                                <select id="tipoCanchaTorneo" class="form-select" required>
+                                    <option value="">Selecciona...</option>
+                                    <option value="futbol5">⚽ Fútbol 5</option>
+                                    <option value="futbol7">🥅 Fútbol 7</option>
+                                    <option value="futbol11">🏟️ Fútbol 11</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" style="color: var(--secondary);">Número de Equipos *</label>
+                                <select id="equiposTorneo" class="form-select" required>
+                                    <option value="">Selecciona...</option>
+                                    <option value="8">8 Equipos - $300.000</option>
+                                    <option value="12">12 Equipos - $450.000</option>
+                                    <option value="16">16 Equipos - $600.000</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" style="color: var(--secondary);">Fecha de Inicio *</label>
+                            <input type="date" id="fechaTorneo" class="form-input" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" style="color: var(--secondary);">Premio *</label>
+                            <input type="text" id="premioTorneo" class="form-input" required 
+                                   placeholder="Ej: Trofeo + $500.000">
+                        </div>
+
+                        <div class="tournament-price-display hidden" id="tournamentPriceDisplay">
+                            <div class="price-label">Costo de Organización</div>
+                            <div class="tournament-price-value" id="tournamentPriceValue">$0</div>
+                        </div>
+
+                        <button type="submit" class="btn-primary" style="background: var(--secondary); margin-top: 2rem;">
+                            Confirmar y Pagar
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Vista Mis Torneos -->
+            <div id="misTorneosView" class="hidden">
+                <h1 class="page-title">Mis Torneos</h1>
+                <p class="page-subtitle" id="torneosSubtitle">Aquí verás todos tus torneos organizados</p>
+                <div id="torneosContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =====================================================
+        // CONFIGURACIÓN DE LA API
+        // =====================================================
+        const API_URL = 'http://localhost/futbolplay/api.php';
+
+        // =====================================================
+        // ESTADO DE LA APLICACIÓN
+        // =====================================================
+        let currentUser = JSON.parse(sessionStorage.getItem('currentUser')) || null;
+        let isLogin = true;
+
+        // ⭐ VARIABLES: Almacenar bloqueos y reservas existentes
+        let bloqueosActivos = [];
+        let reservasExistentes = [];
+
+        const prices = {
+            futbol5: 80000,
+            futbol7: 120000,
+            futbol11: 200000
+        };
+
+        const extraServices = {
+            ninguno: 0,
+            chalecos: 10000,
+            balon: 15000,
+            arbitro: 50000,
+            todo: 70000
+        };
+
+        // PRECIOS DE TORNEOS
+        const tournamentPrices = {
+            8: 300000,
+            12: 450000,
+            16: 600000
+        };
+
+        const fieldNames = {
+            futbol5: 'Fútbol 5',
+            futbol7: 'Fútbol 7',
+            futbol11: 'Fútbol 11'
+        };
+
+        const serviceNames = {
+            ninguno: 'Ninguno',
+            chalecos: 'Chalecos',
+            balon: 'Balón Profesional',
+            arbitro: 'Árbitro',
+            todo: 'Todo Incluido'
+        };
+
+        // =====================================================
+        // ⭐ NUEVAS FUNCIONES DE BLOQUEOS Y RESERVAS
+        // =====================================================
+
+        // Cargar bloqueos desde la base de datos
+        async function cargarBloqueos() {
+            try {
+                const response = await fetch(API_URL + '?endpoint=get-blocks');
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    bloqueosActivos = result.data;
+                    console.log('✅ Bloqueos cargados:', bloqueosActivos.length);
+                }
+            } catch (e) {
+                console.error('❌ Error al cargar bloqueos:', e);
+            }
+        }
+
+        // ⭐ NUEVA: Cargar todas las reservas existentes
+        async function cargarTodasLasReservas() {
+            try {
+                const response = await fetch(API_URL + '?endpoint=get-all-bookings');
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    reservasExistentes = result.data;
+                    console.log('✅ Reservas cargadas:', reservasExistentes.length);
+                }
+            } catch (e) {
+                console.error('❌ Error al cargar reservas:', e);
+            }
+        }
+
+        // Verificar si una fecha/hora está bloqueada
+        function estaBloqueado(fecha, hora) {
+            return bloqueosActivos.some(bloqueo => {
+                return bloqueo.fecha === fecha && (bloqueo.hora === hora || bloqueo.hora === 'todo');
+            });
+        }
+
+        // ⭐ CORREGIDO: Verificar si una fecha/hora YA está reservada considerando DURACIÓN
+        function estaReservado(fecha, hora) {
+            // Convertir hora a número (ej: "14:00" -> 14)
+            const horaNum = parseInt(hora.split(':')[0]);
+            
+            return reservasExistentes.some(reserva => {
+                if (reserva.fecha !== fecha) return false;
+                
+                // Hora de inicio de la reserva existente
+                const reservaHoraInicio = parseInt(reserva.hora.split(':')[0]);
+                const reservaDuracion = parseInt(reserva.duracion);
+                
+                // Rango de horas ocupadas por esta reserva
+                // Ej: reserva a las 14:00 por 2h ocupa 14 y 15
+                const reservaHoraFin = reservaHoraInicio + reservaDuracion;
+                
+                // Verificar si la hora que estamos checando cae dentro del rango ocupado
+                return horaNum >= reservaHoraInicio && horaNum < reservaHoraFin;
+            });
+        }
+
+        // ⭐ NUEVA: Verificar si al hacer una reserva con duración, choca con otras
+        function verificarConflictoReserva(fecha, hora, duracion) {
+            const horaInicio = parseInt(hora.split(':')[0]);
+            const horaFin = horaInicio + parseInt(duracion);
+            
+            return reservasExistentes.some(reserva => {
+                if (reserva.fecha !== fecha) return false;
+                
+                const reservaInicio = parseInt(reserva.hora.split(':')[0]);
+                const reservaFin = reservaInicio + parseInt(reserva.duracion);
+                
+                // Verificar si hay solapamiento de horarios
+                // Caso 1: La nueva reserva comienza durante una existente
+                // Caso 2: La nueva reserva termina durante una existente  
+                // Caso 3: La nueva reserva engloba una existente
+                return (horaInicio >= reservaInicio && horaInicio < reservaFin) ||
+                       (horaFin > reservaInicio && horaFin <= reservaFin) ||
+                       (horaInicio <= reservaInicio && horaFin >= reservaFin);
+            });
+        }
+
+        // ⭐ CORREGIDO: Actualizar horarios disponibles considerando bloqueos Y reservas
+        function actualizarHorariosDisponibles() {
+            const fecha = document.getElementById('fecha').value;
+            const horaSelect = document.getElementById('hora');
+            
+            if (!fecha || !horaSelect) return;
+            
+            // Recorrer todas las opciones de hora
+            const opciones = horaSelect.options;
+            
+            for (let i = 0; i < opciones.length; i++) {
+                const hora = opciones[i].value;
+                
+                // Saltar la opción "Selecciona..."
+                if (!hora) continue;
+                
+                // Limpiar el texto de la opción primero
+                const horaTextoOriginal = opciones[i].getAttribute('data-original-text') || opciones[i].text.split(' ⛔')[0].split(' 🔴')[0];
+                if (!opciones[i].getAttribute('data-original-text')) {
+                    opciones[i].setAttribute('data-original-text', horaTextoOriginal);
+                }
+                opciones[i].text = horaTextoOriginal;
+                opciones[i].disabled = false;
+                
+                // Verificar si está bloqueado
+                if (estaBloqueado(fecha, hora)) {
+                    opciones[i].disabled = true;
+                    opciones[i].text = horaTextoOriginal + ' ⛔ BLOQUEADO';
+                }
+                // ⭐ CORREGIDO: Verificar si ya está reservado (considerando duración)
+                else if (estaReservado(fecha, hora)) {
+                    opciones[i].disabled = true;
+                    opciones[i].text = horaTextoOriginal + ' 🔴 OCUPADO';
+                }
+            }
+        }
+
+        // =====================================================
+        // FUNCIONES DE API
+        // =====================================================
+        async function apiRequest(endpoint, method = 'GET', data = null) {
+            try {
+                const options = {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                };
+
+                if (data) {
+                    options.body = JSON.stringify(data);
+                }
+
+                const response = await fetch(`${API_URL}?endpoint=${endpoint}`, options);
+                const result = await response.json();
+
+                if (!response.ok || result.error) {
+                    throw new Error(result.error || 'Error en la petición');
+                }
+
+                return result;
+            } catch (error) {
+                console.error('Error en API:', error);
+                throw error;
+            }
+        }
+
+        // =====================================================
+        // INICIALIZACIÓN
+        // =====================================================
+        function init() {
+            if (currentUser) {
+                // Si ya hay sesión y es admin, redirigir a admin.html
+                if(currentUser.tipo === 'admin'){
+                    window.location.href = 'admin.html';
+                    return;
+                }
+                // Si es usuario normal, mostrar app
+                showMainApp();
+            }
+
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('fecha').setAttribute('min', today);
+            document.getElementById('fechaTorneo').setAttribute('min', today);
+
+            setupEventListeners();
+        }
+
+        function setupEventListeners() {
+            document.getElementById('authSwitchLink').addEventListener('click', toggleAuthMode);
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            document.getElementById('registerForm').addEventListener('submit', handleRegister);
+            document.getElementById('bookingForm').addEventListener('submit', handleBooking);
+            document.getElementById('torneoForm').addEventListener('submit', handleTorneoSubmit);
+            document.getElementById('btnLogout').addEventListener('click', handleLogout);
+            document.getElementById('btnNuevaReserva').addEventListener('click', () => showView('nuevaReserva'));
+            document.getElementById('btnMisReservas').addEventListener('click', () => showView('misReservas'));
+            document.getElementById('btnTorneo').addEventListener('click', () => showView('torneo'));
+            document.getElementById('btnMisTorneos').addEventListener('click', () => showView('misTorneos'));
+            
+            document.getElementById('tipoCancha').addEventListener('change', updatePrice);
+            document.getElementById('duracion').addEventListener('change', updatePrice);
+            document.getElementById('serviciosExtra').addEventListener('change', updatePrice);
+            document.getElementById('equiposTorneo').addEventListener('change', updateTournamentPrice);
+
+            // ⭐ Escuchar cambios en la fecha
+            document.getElementById('fecha').addEventListener('change', actualizarHorariosDisponibles);
+        }
+
+        // =====================================================
+        // AUTENTICACIÓN
+        // =====================================================
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const btn = document.getElementById('loginBtn');
+            btn.disabled = true;
+            btn.textContent = 'Iniciando sesión...';
+
+            try {
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+
+                const response = await apiRequest('login', 'POST', { email, password });
+
+                currentUser = response.data;
+                sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                
+                // DETECTAR SI ES ADMIN O USUARIO
+                if(currentUser.tipo === 'admin'){
+                    window.location.href = 'admin.html';
+                } else {
+                    showMainApp();
+                    // ⭐ Cargar bloqueos y reservas después de login
+                    await cargarBloqueos();
+                    await cargarTodasLasReservas();
+                }
+            } catch (error) {
+                showAlert('alertContainer', error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Iniciar Sesión';
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+
+            const btn = document.getElementById('registerBtn');
+            btn.disabled = true;
+            btn.textContent = 'Registrando...';
+
+            try {
+                const data = {
+                    nombre: document.getElementById('registerNombre').value,
+                    telefono: document.getElementById('registerTelefono').value,
+                    cedula: document.getElementById('registerCedula').value,
+                    email: document.getElementById('registerEmail').value,
+                    password: document.getElementById('registerPassword').value
+                };
+
+                await apiRequest('register', 'POST', data);
+
+                showAlert('alertContainer', '¡Registro exitoso! Ahora puedes iniciar sesión', 'success');
+
+                setTimeout(() => {
+                    toggleAuthMode();
+                    document.getElementById('registerForm').reset();
+                }, 2000);
+            } catch (error) {
+                showAlert('alertContainer', error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Registrarse';
+            }
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            sessionStorage.removeItem('currentUser');
+            document.getElementById('authContainer').classList.remove('hidden');
+            document.getElementById('mainContent').classList.add('hidden');
+            document.getElementById('navbar').classList.add('hidden');
+            document.getElementById('loginForm').reset();
+        }
+
+        // =====================================================
+        // RESERVAS
+        // =====================================================
+        async function handleBooking(e) {
+            e.preventDefault();
+
+            const fecha = document.getElementById('fecha').value;
+            const hora = document.getElementById('hora').value;
+            const duracion = document.getElementById('duracion').value;
+
+            // ⭐ VALIDACIÓN 1: Verificar si está bloqueado
+            if (estaBloqueado(fecha, hora)) {
+                showAlert('bookingAlertContainer', 
+                    '⛔ Este horario está bloqueado. Por favor selecciona otro horario.', 
+                    'error'
+                );
+                return;
+            }
+
+            // ⭐ VALIDACIÓN 2: Verificar conflictos considerando duración
+            if (verificarConflictoReserva(fecha, hora, duracion)) {
+                showAlert('bookingAlertContainer', 
+                    '🔴 Hay un conflicto de horarios. Esta reserva se solapa con otra existente. Por favor selecciona otro horario o reduce la duración.', 
+                    'error'
+                );
+                return;
+            }
+
+            const btn = document.getElementById('bookingBtn');
+            btn.disabled = true;
+            btn.textContent = 'Creando reserva...';
+
+            try {
+                const data = {
+                    usuario_id: currentUser.id,
+                    tipo_cancha: document.getElementById('tipoCancha').value,
+                    fecha: fecha,
+                    hora: hora,
+                    duracion: duracion,
+                    servicios_extra: document.getElementById('serviciosExtra').value
+                };
+
+                await apiRequest('create-booking', 'POST', data);
+
+                showAlert('bookingAlertContainer', '✓ ¡Reserva creada exitosamente!', 'success');
+
+                document.getElementById('bookingForm').reset();
+                document.getElementById('priceDisplay').classList.add('hidden');
+                
+                // ⭐ Recargar reservas para actualizar disponibilidad
+                await cargarTodasLasReservas();
+                await updateBookingCount();
+
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (error) {
+                showAlert('bookingAlertContainer', error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Confirmar Reserva';
+            }
+        }
+
+        async function loadUserBookings() {
+            const container = document.getElementById('bookingsContainer');
+            container.innerHTML = '<div class="loading"><div class="spinner"></div>Cargando reservas...</div>';
+
+            try {
+                const response = await apiRequest(`get-bookings&usuario_id=${currentUser.id}`);
+                const bookings = response.data;
+
+                if (bookings.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">📅</div>
+                            <div class="empty-title">No tienes reservas todavía</div>
+                            <p>Crea tu primera reserva para verla aquí</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                document.getElementById('reservasSubtitle').textContent = 
+                    `Tienes ${bookings.length} reserva${bookings.length !== 1 ? 's' : ''} activa${bookings.length !== 1 ? 's' : ''}`;
+
+                container.innerHTML = `
+                    <div class="bookings-grid">
+                        ${bookings.map(booking => `
+                            <div class="booking-card">
+                                <span class="booking-status">✓ Confirmada</span>
+                                <div class="booking-field">${fieldNames[booking.tipo_cancha]}</div>
+                                <div class="booking-info">
+                                    <div class="booking-info-item">
+                                        <span class="booking-info-label">📅 Fecha</span>
+                                        <span class="booking-info-value">${booking.fecha}</span>
+                                    </div>
+                                    <div class="booking-info-item">
+                                        <span class="booking-info-label">🕐 Hora</span>
+                                        <span class="booking-info-value">${booking.hora}</span>
+                                    </div>
+                                    <div class="booking-info-item">
+                                        <span class="booking-info-label">⏱️ Duración</span>
+                                        <span class="booking-info-value">${booking.duracion}h</span>
+                                    </div>
+                                    <div class="booking-info-item">
+                                        <span class="booking-info-label">➕ Extras</span>
+                                        <span class="booking-info-value">${serviceNames[booking.servicios_extra]}</span>
+                                    </div>
+                                    <div class="booking-info-item">
+                                        <span class="booking-info-label">💰 Total</span>
+                                        <span class="booking-info-value">$${parseFloat(booking.precio_total).toLocaleString('es-CO')}</span>
+                                    </div>
+                                </div>
+                                <button class="btn-cancel" onclick="cancelBooking(${booking.id})">
+                                    Cancelar Reserva
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="alert alert-error">
+                        Error al cargar las reservas: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function cancelBooking(reservaId) {
+            if (!confirm('¿Estás seguro de cancelar esta reserva?')) return;
+
+            try {
+                await apiRequest('cancel-booking', 'POST', {
+                    reserva_id: reservaId,
+                    usuario_id: currentUser.id
+                });
+
+                // ⭐ Recargar reservas para actualizar disponibilidad
+                await cargarTodasLasReservas();
+                await updateBookingCount();
+                await loadUserBookings();
+            } catch (error) {
+                alert('Error al cancelar la reserva: ' + error.message);
+            }
+        }
+
+        async function updateBookingCount() {
+            try {
+                const response = await apiRequest(`get-bookings&usuario_id=${currentUser.id}`);
+                document.getElementById('reservaCount').textContent = `(${response.data.length})`;
+            } catch (error) {
+                console.error('Error al actualizar contador:', error);
+            }
+        }
+
+        // =====================================================
+        // TORNEOS
+        // =====================================================
+        function updateTournamentPrice() {
+            const numEquipos = document.getElementById('equiposTorneo').value;
+            
+            if (numEquipos) {
+                const precio = tournamentPrices[numEquipos] || 0;
+                document.getElementById('tournamentPriceValue').textContent = `$${precio.toLocaleString('es-CO')}`;
+                document.getElementById('tournamentPriceDisplay').classList.remove('hidden');
+            } else {
+                document.getElementById('tournamentPriceDisplay').classList.add('hidden');
+            }
+        }
+
+        async function handleTorneoSubmit(e) {
+            e.preventDefault();
+
+            const numEquipos = document.getElementById('equiposTorneo').value;
+            const tipoCancha = document.getElementById('tipoCanchaTorneo').value;
+            
+            if (!numEquipos) {
+                showAlert('torneoAlert', 'Por favor selecciona el número de equipos', 'error');
+                return;
+            }
+
+            if (!tipoCancha) {
+                showAlert('torneoAlert', 'Por favor selecciona el tipo de cancha', 'error');
+                return;
+            }
+
+            const costoOrganizacion = tournamentPrices[numEquipos];
+
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Procesando pago...';
+
+            try {
+                const data = {
+                    usuario_id: currentUser.id,
+                    nombre: document.getElementById('nombreTorneo').value,
+                    tipo_cancha: tipoCancha,
+                    fecha_inicio: document.getElementById('fechaTorneo').value,
+                    num_equipos: numEquipos,
+                    premio: document.getElementById('premioTorneo').value,
+                    costo_organizacion: costoOrganizacion
+                };
+
+                await apiRequest('create-tournament', 'POST', data);
+
+                showAlert('torneoAlert', 
+                    `✓ ¡Torneo creado exitosamente! Costo: $${costoOrganizacion.toLocaleString('es-CO')}`, 
+                    'success'
+                );
+                
+                document.getElementById('torneoForm').reset();
+                document.getElementById('tournamentPriceDisplay').classList.add('hidden');
+                await updateTournamentCount();
+
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (error) {
+                showAlert('torneoAlert', 'Error: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        async function loadUserTournaments() {
+            const container = document.getElementById('torneosContainer');
+            container.innerHTML = '<div class="loading"><div class="spinner"></div>Cargando torneos...</div>';
+
+            try {
+                const response = await apiRequest(`get-tournaments&usuario_id=${currentUser.id}`);
+                const torneos = response.data;
+
+                if (torneos.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">🏆</div>
+                            <div class="empty-title">No has creado torneos todavía</div>
+                            <p>Organiza tu primer torneo para verlo aquí</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                document.getElementById('torneosSubtitle').textContent = 
+                    `Has organizado ${torneos.length} torneo${torneos.length !== 1 ? 's' : ''}`;
+
+                container.innerHTML = `
+                    <div class="bookings-grid">
+                        ${torneos.map(torneo => `
+                            <div class="tournament-card">
+                                <span class="tournament-badge">🏆 Torneo</span>
+                                <div class="tournament-name">${torneo.nombre}</div>
+                                <div class="booking-info">
+                                    <div class="booking-info-item">
+                                        <span class="booking-info-label">⚽ Modalidad</span>
+                                        <span class="booking-info-value">${fieldNames[torneo.tipo_cancha] || 'No especificado'}</span>
+                                    </div>
+                                    <div class="booking-info-item">
+                                        <span class="booking-info-label">📅 Fecha Inicio</span>
+                                        <span class="booking-info-value">${torneo.fecha_inicio}</span>
+                                    </div>
+                                    <div class="booking-info-item">
+                                        <span class="booking-info-label">👥 Equipos</span>
+                                        <span class="booking-info-value">${torneo.num_equipos} equipos</span>
+                                    </div>
+                                    <div class="booking-info-item">
+                                        <span class="booking-info-label">🎁 Premio</span>
+                                        <span class="booking-info-value">${torneo.premio}</span>
+                                    </div>
+                                    <div class="booking-info-item">
+                                        <span class="booking-info-label">💰 Costo</span>
+                                        <span class="booking-info-value">$${parseFloat(torneo.costo_organizacion || 0).toLocaleString('es-CO')}</span>
+                                    </div>
+                                    <div class="booking-info-item">
+                                        <span class="booking-info-label">📝 Creado</span>
+                                        <span class="booking-info-value">${new Date(torneo.created_at).toLocaleDateString('es-CO')}</span>
+                                    </div>
+                                </div>
+                                <div class="action-buttons">
+                                    <button class="btn-view-tournament" onclick="viewTournamentDetails(${torneo.id})">
+                                        Ver Detalles
+                                    </button>
+                                    <button class="btn-cancel" onclick="deleteTournament(${torneo.id})">
+                                        Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="alert alert-error">
+                        Error al cargar los torneos: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function deleteTournament(torneoId) {
+            if (!confirm('¿Estás seguro de eliminar este torneo?')) return;
+
+            try {
+                await apiRequest('delete-tournament', 'POST', {
+                    torneo_id: torneoId,
+                    usuario_id: currentUser.id
+                });
+
+                await updateTournamentCount();
+                await loadUserTournaments();
+            } catch (error) {
+                alert('Error al eliminar el torneo: ' + error.message);
+            }
+        }
+
+        function viewTournamentDetails(torneoId) {
+            alert(`Detalle del torneo #${torneoId}\n\nEsta funcionalidad mostrará:\n- Equipos inscritos\n- Calendario de partidos\n- Resultados\n- Estadísticas\n\n¡Próximamente!`);
+        }
+
+        async function updateTournamentCount() {
+            try {
+                const response = await apiRequest(`get-tournaments&usuario_id=${currentUser.id}`);
+                document.getElementById('torneoCount').textContent = `(${response.data.length})`;
+            } catch (error) {
+                console.error('Error al actualizar contador de torneos:', error);
+            }
+        }
+
+        // =====================================================
+        // UI
+        // =====================================================
+        function toggleAuthMode() {
+            isLogin = !isLogin;
+
+            if (isLogin) {
+                document.getElementById('loginForm').classList.remove('hidden');
+                document.getElementById('registerForm').classList.add('hidden');
+                document.getElementById('authTitle').textContent = 'Iniciar Sesión';
+                document.getElementById('authSubtitle').textContent = 'Accede a tu cuenta';
+                document.getElementById('authSwitchText').textContent = '¿No tienes cuenta?';
+                document.getElementById('authSwitchLink').textContent = 'Regístrate aquí';
+            } else {
+                document.getElementById('loginForm').classList.add('hidden');
+                document.getElementById('registerForm').classList.remove('hidden');
+                document.getElementById('authTitle').textContent = 'Crear Cuenta';
+                document.getElementById('authSubtitle').textContent = 'Regístrate para reservar canchas';
+                document.getElementById('authSwitchText').textContent = '¿Ya tienes cuenta?';
+                document.getElementById('authSwitchLink').textContent = 'Inicia sesión';
+            }
+
+            document.getElementById('alertContainer').innerHTML = '';
+        }
+
+        function showAlert(containerId, message, type) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            setTimeout(() => container.innerHTML = '', 5000);
+        }
+
+        async function showMainApp() {
+            document.getElementById('authContainer').classList.add('hidden');
+            document.getElementById('mainContent').classList.remove('hidden');
+            document.getElementById('navbar').classList.remove('hidden');
+            document.getElementById('userName').textContent = currentUser.nombre;
+            
+            // ⭐ Cargar datos necesarios
+            await cargarBloqueos();
+            await cargarTodasLasReservas();
+            await updateBookingCount();
+            await updateTournamentCount();
+            
+            showView('nuevaReserva');
+        }
+
+        function showView(view) {
+            // Ocultar todas las vistas
+            document.getElementById('nuevaReservaView').classList.add('hidden');
+            document.getElementById('misReservasView').classList.add('hidden');
+            document.getElementById('torneoView').classList.add('hidden');
+            document.getElementById('misTorneosView').classList.add('hidden');
+
+            // Remover active de todos los botones
+            document.getElementById('btnNuevaReserva').classList.remove('active');
+            document.getElementById('btnMisReservas').classList.remove('active');
+            document.getElementById('btnTorneo').classList.remove('active');
+            document.getElementById('btnMisTorneos').classList.remove('active');
+
+            // Mostrar la vista seleccionada
+            if (view === 'nuevaReserva') {
+                document.getElementById('nuevaReservaView').classList.remove('hidden');
+                document.getElementById('btnNuevaReserva').classList.add('active');
+            } else if (view === 'misReservas') {
+                document.getElementById('misReservasView').classList.remove('hidden');
+                document.getElementById('btnMisReservas').classList.add('active');
+                loadUserBookings();
+            } else if (view === 'torneo') {
+                document.getElementById('torneoView').classList.remove('hidden');
+                document.getElementById('btnTorneo').classList.add('active');
+            } else if (view === 'misTorneos') {
+                document.getElementById('misTorneosView').classList.remove('hidden');
+                document.getElementById('btnMisTorneos').classList.add('active');
+                loadUserTournaments();
+            }
+        }
+
+        function updatePrice() {
+            const tipoCancha = document.getElementById('tipoCancha').value;
+            const duracion = parseInt(document.getElementById('duracion').value);
+            const serviciosExtra = document.getElementById('serviciosExtra').value;
+
+            if (tipoCancha) {
+                const basePrice = prices[tipoCancha] || 0;
+                const extraPrice = extraServices[serviciosExtra] || 0;
+                const total = (basePrice * duracion) + extraPrice;
+
+                document.getElementById('priceValue').textContent = `$${total.toLocaleString('es-CO')}`;
+                document.getElementById('priceDisplay').classList.remove('hidden');
+            } else {
+                document.getElementById('priceDisplay').classList.add('hidden');
+            }
+        }
+
+        
+        init();
+    </script>
+</body>
+</html>

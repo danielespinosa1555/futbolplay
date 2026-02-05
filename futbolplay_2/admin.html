@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Admin - FutbolPlay</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+
+<div class="container">
+
+
+<div class="admin-header">
+  <div>
+    <h1>🔧 Panel de Administración</h1>
+    <p class="subtitle" style="margin-bottom:0">Gestión completa de reservas, torneos y calendario</p>
+  </div>
+  <div style="display:flex;align-items:center;gap:1.5rem">
+    <div class="admin-info">
+      Admin:<span class="admin-name" id="adminName"></span>
+    </div>
+    <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value" id="totalUsers">0</div><div class="stat-label">Usuarios</div></div>
+  <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-value" id="totalBookings">0</div><div class="stat-label">Reservas</div></div>
+  <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value" id="totalRevenue">$0</div><div class="stat-label">Ingresos Reservas</div></div>
+  <div class="stat-card tournament"><div class="stat-icon">🏆</div><div class="stat-value tournament" id="totalTournaments">0</div><div class="stat-label">Torneos</div></div>
+  <div class="stat-card tournament"><div class="stat-icon">💵</div><div class="stat-value tournament" id="tournamentRevenue">$0</div><div class="stat-label">Ingresos Torneos</div></div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('usuarios')">👥 Usuarios</button>
+  <button class="tab" onclick="switchTab('reservas')">📅 Reservas</button>
+  <button class="tab" onclick="switchTab('torneos')">🏆 Torneos</button>
+  <button class="tab" onclick="switchTab('bloqueos')">⛔ Bloqueos</button>
+  <button class="tab" onclick="switchTab('calendario')">🗓️ Calendario</button>
+</div>
+
+<div id="tab-usuarios" class="tab-content active">
+  <div class="section">
+    <div class="section-title">📋 Usuarios Registrados</div>
+    <div class="flex">
+      <input id="searchUser" placeholder="🔍 Buscar por nombre, email o cédula" oninput="filterUsers()" style="width:100%">
+    </div>
+    <div id="usersTable"></div>
+  </div>
+</div>
+
+<div id="tab-reservas" class="tab-content">
+  <div class="section">
+    <div class="section-title">📅 Todas las Reservas</div>
+    <div id="bookingsTable"></div>
+  </div>
+</div>
+
+<div id="tab-torneos" class="tab-content">
+  <div class="section">
+    <div class="section-title">🏆 Todos los Torneos</div>
+    <div class="flex">
+      <input id="searchTournament" placeholder="🔍 Buscar por nombre de torneo u organizador" oninput="filterTournaments()" style="width:100%">
+    </div>
+    <div id="tournamentsTable"></div>
+  </div>
+</div>
+
+<div id="tab-bloqueos" class="tab-content">
+  <div class="section">
+    <div class="section-title">⛔ Bloquear horarios</div>
+    <div id="blockAlert"></div>
+    <div class="flex">
+      <input type="date" id="blockDate" required>
+      <select id="blockHour">
+        <option value="todo">Todo el día</option>
+        <option>06:00</option><option>08:00</option><option>10:00</option>
+        <option>12:00</option><option>14:00</option><option>16:00</option>
+        <option>18:00</option><option>20:00</option><option>22:00</option>
+      </select>
+      <input type="text" id="blockMotivo" placeholder="Motivo (opcional)" style="flex:1">
+      <button class="btn-primary" onclick="addBlock()">🔒 Bloquear</button>
+    </div>
+    <div id="blockList"></div>
+  </div>
+</div>
+
+<div id="tab-calendario" class="tab-content">
+  <div class="section">
+    <div class="section-title">🗓️ Calendario de reservas y torneos (vista mensual)</div>
+    <div style="margin-bottom:1rem;padding:1rem;background:rgba(13,110,253,0.1);border-radius:12px;color:var(--gray);">
+      <strong>Leyenda:</strong> 
+      <span style="margin-left:1rem">🏆 = Torneo</span>
+      <span style="margin-left:1rem">🔴 = Reservas</span>
+      <span style="margin-left:1rem">⛔ = Bloqueado</span>
+    </div>
+    
+    <div id="calendar" class="calendar"></div>
+    <div id="dayDetail" style="margin-top:1rem;color:var(--gray);"></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const API_URL = "http://localhost/futbolplay/api.php";
+let allUsers = [];
+let allBookings = [];
+let allTournaments = [];
+let blocks = [];
+
+
+async function init(){
+  
+  await showAdminPanel();
+}
+
+async function showAdminPanel(){
+  document.getElementById('adminName').textContent = 'Administrador';
+  
+  await updateStats();
+  await renderUsers();
+  await renderBookings();
+  await renderTournaments();
+  await renderBlocks();
+  await renderCalendar();
+}
+
+function logout(){
+  if(!confirm('¿Seguro que quieres salir?')) return;
+  
+  
+  sessionStorage.clear();
+  
+  
+  window.location.href = 'index.html';
+}
+
+
+
+async function apiRequest(url){
+  try{
+    const r = await fetch(url);
+    const j = await r.json();
+    if(j.status !== 'success'){
+      console.error(j.error);
+      return [];
+    }
+    return j.data;
+  }catch(e){
+    console.error(e);
+    return [];
+  }
+}
+
+async function updateStats(){
+  const s = await apiRequest(API_URL+'?endpoint=stats');
+  document.getElementById('totalUsers').textContent = s.users || 0;
+  document.getElementById('totalBookings').textContent = s.bookings || 0;
+  document.getElementById('totalRevenue').textContent = '$'+parseFloat(s.revenue||0).toLocaleString('es-CO');
+  document.getElementById('totalTournaments').textContent = s.tournaments || 0;
+  
+
+  const tournaments = await apiRequest(API_URL+'?endpoint=get-all-tournaments');
+  const tournamentRevenue = tournaments.reduce((sum, t) => sum + parseFloat(t.costo_organizacion || 0), 0);
+  document.getElementById('tournamentRevenue').textContent = '$'+tournamentRevenue.toLocaleString('es-CO');
+}
+
+
+async function renderUsers(){
+  allUsers = await apiRequest(API_URL+'?endpoint=get-all-users');
+  drawUsers(allUsers);
+}
+function drawUsers(users){
+  const c = document.getElementById('usersTable');
+  if(!users.length){
+    c.innerHTML = '<div class="empty-state"><div class="empty-icon">👤</div><p>No hay usuarios</p></div>';
+    return;
+  }
+  c.innerHTML = `<table><thead><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Cédula</th></tr></thead><tbody>`+
+  users.map(u=>`<tr><td><span class="badge badge-success">#${u.id}</span></td><td>${u.nombre}</td><td>${u.email}</td><td>${u.telefono}</td><td>${u.cedula}</td></tr>`).join('')+
+  `</tbody></table>`;
+}
+function filterUsers(){
+  const q = document.getElementById('searchUser').value.toLowerCase();
+  const f = allUsers.filter(u=> u.nombre.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.cedula.includes(q));
+  drawUsers(f);
+}
+
+const fieldNames = {futbol5:'Fútbol 5',futbol7:'Fútbol 7',futbol11:'Fútbol 11'};
+const serviceNames = {ninguno:'Ninguno',chalecos:'Chalecos',balon:'Balón',arbitro:'Árbitro',todo:'Todo Incluido'};
+
+async function renderBookings(){
+  allBookings = await apiRequest(API_URL+'?endpoint=get-all-bookings');
+  drawBookings(allBookings);
+}
+function drawBookings(bookings){
+  const c = document.getElementById('bookingsTable');
+  if(!bookings.length){
+    c.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><p>No hay reservas</p></div>';
+    return;
+  }
+  c.innerHTML = `<table><thead><tr><th>ID</th><th>Usuario</th><th>Cancha</th><th>Fecha</th><th>Hora</th><th>Duración</th><th>Extras</th><th>Total</th><th>Acción</th></tr></thead><tbody>`+
+  bookings.map(b=>`<tr><td>#${b.id}</td><td>${b.userName}</td><td>${fieldNames[b.tipo_cancha]}</td><td>${b.fecha}</td><td>${b.hora}</td><td>${b.duracion}h</td><td>${serviceNames[b.servicios_extra]}</td><td>$${parseFloat(b.precio_total).toLocaleString('es-CO')}</td><td><button class='btn-danger' onclick='cancelBooking(${b.id})'>❌ Cancelar</button></td></tr>`).join('')+
+  `</tbody></table>`;
+}
+async function cancelBooking(id){
+  if(!confirm('¿Cancelar esta reserva?')) return;
+  await fetch(API_URL+'?endpoint=cancel-booking',{
+    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reserva_id:id})
+  });
+  await renderBookings();
+  await updateStats();
+  await renderCalendar(); 
+}
+
+
+async function renderTournaments(){
+  allTournaments = await apiRequest(API_URL+'?endpoint=get-all-tournaments');
+  drawTournaments(allTournaments);
+}
+
+function drawTournaments(tournaments){
+  const c = document.getElementById('tournamentsTable');
+  if(!tournaments.length){
+    c.innerHTML = '<div class="empty-state"><div class="empty-icon">🏆</div><p>No hay torneos creados</p></div>';
+    return;
+  }
+  c.innerHTML = `<table><thead><tr><th>ID</th><th>Nombre</th><th>Organizador</th><th>Modalidad</th><th>Fecha Inicio</th><th>Equipos</th><th>Premio</th><th>Costo</th><th>Creado</th><th>Acción</th></tr></thead><tbody>`+
+  tournaments.map(t=>`
+    <tr>
+      <td><span class="badge badge-tournament">#${t.id}</span></td>
+      <td><strong>${t.nombre}</strong></td>
+      <td>${t.organizador || 'N/A'}</td>
+      <td>${fieldNames[t.tipo_cancha] || t.tipo_cancha || 'N/A'}</td>
+      <td>${t.fecha_inicio}</td>
+      <td>${t.num_equipos} equipos</td>
+      <td>${t.premio}</td>
+      <td><strong style="color:var(--secondary)">$${parseFloat(t.costo_organizacion || 0).toLocaleString('es-CO')}</strong></td>
+      <td>${new Date(t.created_at).toLocaleDateString('es-CO')}</td>
+      <td><button class='btn-danger' onclick='deleteTournament(${t.id})'>🗑️ Eliminar</button></td>
+    </tr>
+  `).join('')+
+  `</tbody></table>`;
+}
+
+function filterTournaments(){
+  const q = document.getElementById('searchTournament').value.toLowerCase();
+  const f = allTournaments.filter(t=> 
+    (t.nombre && t.nombre.toLowerCase().includes(q)) || 
+    (t.organizador && t.organizador.toLowerCase().includes(q))
+  );
+  drawTournaments(f);
+}
+
+async function deleteTournament(id){
+  if(!confirm('¿Estás seguro de eliminar este torneo? Esta acción no se puede deshacer.')) return;
+  
+  try {
+    const response = await fetch(API_URL+'?endpoint=delete-tournament-admin',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({torneo_id: id})
+    });
+    
+    const result = await response.json();
+    
+    if(result.status === 'success'){
+      alert('Torneo eliminado exitosamente');
+      renderTournaments();
+      updateStats();
+      renderCalendar(); 
+    } else {
+      alert('Error: ' + (result.error || 'No se pudo eliminar el torneo'));
+    }
+  } catch(e) {
+    console.error(e);
+    alert('Error al eliminar el torneo');
+  }
+}
+
+
+function showAlert(message, type = 'success') {
+  const alertDiv = document.getElementById('blockAlert');
+  alertDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+  setTimeout(() => { alertDiv.innerHTML = ''; }, 3000);
+}
+
+async function addBlock(){
+  const d = document.getElementById('blockDate').value;
+  const h = document.getElementById('blockHour').value;
+  const m = document.getElementById('blockMotivo').value || 'Mantenimiento';
+  
+  if(!d){
+    showAlert('⚠️ Por favor selecciona una fecha', 'error');
+    return;
+  }
+
+  try {
+    const response = await fetch(API_URL+'?endpoint=create-block', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({fecha: d, hora: h, motivo: m})
+    });
+
+    const result = await response.json();
+
+    if(result.status === 'success') {
+      showAlert('✅ Bloqueo creado exitosamente', 'success');
+      document.getElementById('blockDate').value = '';
+      document.getElementById('blockMotivo').value = '';
+      renderBlocks();
+      renderCalendar();
+    } else {
+      showAlert('❌ ' + result.error, 'error');
+    }
+  } catch(e) {
+    console.error(e);
+    showAlert('❌ Error al crear bloqueo', 'error');
+  }
+}
+
+async function renderBlocks(){
+  blocks = await apiRequest(API_URL+'?endpoint=get-blocks');
+  const c = document.getElementById('blockList');
+  
+  if(!blocks.length){
+    c.innerHTML = '<p style="color:var(--gray);margin-top:1rem">No hay bloqueos activos</p>';
+    return;
+  }
+
+  c.innerHTML = `
+    <table style="margin-top:1rem">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Horario</th>
+          <th>Motivo</th>
+          <th>Creado</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${blocks.map(b => `
+          <tr>
+            <td><strong>${b.fecha}</strong></td>
+            <td><span class="badge badge-blocked">${b.hora === 'todo' ? 'Todo el día' : b.hora}</span></td>
+            <td>${b.motivo || 'N/A'}</td>
+            <td>${new Date(b.created_at).toLocaleDateString('es-CO')}</td>
+            <td><button class="btn-danger" onclick="removeBlock(${b.id})">🗑️ Eliminar</button></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+async function removeBlock(id){
+  if(!confirm('¿Eliminar este bloqueo?')) return;
+
+  try {
+    const response = await fetch(API_URL+'?endpoint=delete-block', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({bloqueo_id: id})
+    });
+
+    const result = await response.json();
+
+    if(result.status === 'success') {
+      showAlert('✅ Bloqueo eliminado', 'success');
+      renderBlocks();
+      renderCalendar();
+    } else {
+      showAlert('❌ ' + result.error, 'error');
+    }
+  } catch(e) {
+    console.error(e);
+    showAlert('❌ Error al eliminar bloqueo', 'error');
+  }
+}
+
+
+async function renderCalendar(){
+  const cal = document.getElementById('calendar');
+  const detail = document.getElementById('dayDetail');
+  
+  if (!allBookings || allBookings.length === 0) {
+    await renderBookings();
+  }
+  if (!blocks || blocks.length === 0) {
+    await renderBlocks();
+  }
+  if (!allTournaments || allTournaments.length === 0) {
+    await renderTournaments();
+  }
+  
+  cal.innerHTML = '';
+
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const days = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+  days.forEach(d=>{
+    const h = document.createElement('div');
+    h.textContent = d;
+    h.style.textAlign = 'center';
+    h.style.fontWeight = '700';
+    h.style.color = 'var(--primary)';
+    cal.appendChild(h);
+  });
+
+  for(let i=0; i<firstDay; i++){
+    cal.appendChild(document.createElement('div'));
+  }
+
+  for(let d=1; d<=daysInMonth; d++){
+    const mm = String(month+1).padStart(2,'0');
+    const dd = String(d).padStart(2,'0');
+    const fecha = `${year}-${mm}-${dd}`;
+
+    const cell = document.createElement('div');
+    cell.className = 'day';
+    
+    const bloqueosDia = blocks.filter(b=>b.fecha===fecha);
+    const reservasDia = allBookings.filter(b=>b.fecha===fecha);
+    const torneosDia = allTournaments.filter(t=>t.fecha_inicio===fecha);
+    
+    let dayContent = `<strong>${d}</strong>`;
+    
+ 
+    if(torneosDia.length) {
+      cell.classList.add('tournament');
+      dayContent += `<span class="day-indicator">🏆 ${torneosDia.length} Torneo${torneosDia.length > 1 ? 's' : ''}</span>`;
+    } else if(bloqueosDia.length && reservasDia.length){
+      cell.classList.add('both');
+      dayContent += `<span class="day-indicator">🔴 ${reservasDia.length}R + ⛔</span>`;
+    } else if(reservasDia.length) {
+      cell.classList.add('busy');
+      dayContent += `<span class="day-indicator">🔴 ${reservasDia.length} reserva${reservasDia.length > 1 ? 's' : ''}</span>`;
+    } else if(bloqueosDia.length) {
+      cell.classList.add('blocked');
+      dayContent += `<span class="day-indicator">⛔ Bloqueado</span>`;
+    }
+    
+    cell.innerHTML = dayContent;
+
+    cell.onclick = ()=>{
+      let detailHTML = `<strong style="color:var(--primary);font-size:1.2rem">${fecha}</strong><br><br>`;
+      
+  
+      if(torneosDia.length){
+        detailHTML += `<div style="color:var(--secondary);font-weight:700;margin-bottom:1rem">🏆 TORNEOS DEL DÍA (${torneosDia.length})</div>`;
+        const listaTorneos = torneosDia.map(t =>
+          `<li style="margin-bottom:.5rem;padding:.5rem;background:rgba(255,51,102,0.1);border-radius:8px">
+            <strong>${t.nombre}</strong><br>
+            <span style="color:var(--gray);font-size:0.9rem">
+              Organizador: ${t.organizador} | ${t.num_equipos} equipos | ${fieldNames[t.tipo_cancha] || 'N/A'} | $${parseFloat(t.costo_organizacion || 0).toLocaleString('es-CO')}
+            </span>
+          </li>`
+        ).join('');
+        detailHTML += `<ul style="list-style:none;padding:0">${listaTorneos}</ul>`;
+      }
+      
+      if(reservasDia.length){
+        detailHTML += `<div style="color:var(--error);font-weight:700;margin-bottom:1rem;margin-top:1.5rem">🔴 RESERVAS DEL DÍA (${reservasDia.length})</div>`;
+        const lista = reservasDia.map(r =>
+          `<li style="margin-bottom:.5rem"><strong>${r.hora}</strong> — ${r.userName} — <span style="color:var(--primary)">${fieldNames[r.tipo_cancha]}</span> — ${r.duracion}h — $${parseFloat(r.precio_total).toLocaleString('es-CO')}</li>`
+        ).join('');
+        detailHTML += `<ul style="list-style:none;padding:0">${lista}</ul>`;
+      }
+      
+      if(bloqueosDia.length){
+        detailHTML += `<div style="color:var(--error);font-weight:700;margin:1.5rem 0 1rem 0">⛔ BLOQUEOS</div>`;
+        const listaBloqueos = bloqueosDia.map(b => 
+          `<li style="margin-bottom:.5rem"><strong>${b.hora === 'todo' ? 'Todo el día' : b.hora}</strong> — ${b.motivo}</li>`
+        ).join('');
+        detailHTML += `<ul style="list-style:none;padding:0">${listaBloqueos}</ul>`;
+      }
+      
+      if(!reservasDia.length && !bloqueosDia.length && !torneosDia.length){
+        detailHTML += `<div style="color:var(--primary);font-size:1.1rem">✅ Día disponible - Sin reservas, torneos ni bloqueos</div>`;
+      }
+      
+      detail.innerHTML = detailHTML;
+    };
+
+    cal.appendChild(cell);
+  }
+}
+
+// ---------- TABS ----------
+async function switchTab(tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+
+  const btn = document.querySelector(`.tab[onclick*="${tab}"]`);
+  if(btn) btn.classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+
+  if(tab==='usuarios') await renderUsers();
+  if(tab==='reservas') await renderBookings();
+  if(tab==='torneos') await renderTournaments();
+  if(tab==='bloqueos') await renderBlocks();
+  if(tab==='calendario') await renderCalendar();
+}
+
+init();
+</script>
+</body>
+</html>
